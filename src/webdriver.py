@@ -21,8 +21,8 @@ class WebDriver(object):
     def __init__(self):
         self.driver = self.__generateDriver()
 
-    def fetchCustoms(self, HS: str):
-        url = f"https://www.trademap.org/Country_SelProduct.aspx?nvpm=1%7c%7c%7c%7c%7c{HS}%7c%7c%7c2%7c1%7c1%7c2%7c1%7c%7c2%7c1%7c1%7c1"
+    def fetchCustoms(self, hs: str, criteria: str):
+        url = self.__generateUrl(hs, criteria)
         self.driver.get(url)
         time.sleep(1)
         self.__handleLogin()
@@ -44,6 +44,8 @@ class WebDriver(object):
             time.sleep(1)
             sp.generateDom(self.driver.page_source)
             datas.extend(sp.crawlData())
+
+        self.driver.close()
 
         return datas
 
@@ -76,7 +78,7 @@ class WebDriver(object):
 
     def __verifyCode(self, codeImgUrl: str):
         imgPath = self.__generateCodeImg(codeImgUrl)
-        orc = ddddocr.DdddOcr()
+        orc = ddddocr.DdddOcr(show_ad=False)
         with open(imgPath, 'rb') as f:
             image = f.read()
         code = orc.classification(image)
@@ -87,14 +89,18 @@ class WebDriver(object):
 
     def __generateDriver(self):
         options = webdriver.ChromeOptions()
-        options.add_argument("--headless")
-        options.add_argument("--disable-gpu")
+        options.add_argument("--headless")  # 无头模式
+        options.add_argument("--disable-gpu")  # 禁止弹窗
+        options.add_argument('--incognito')  # 无痕隐身
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        # options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_argument('blink-settings=imagesEnabled=false')
-        options.add_argument("start-maximized")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        # options.add_argument("start-maximized")
         options.add_experimental_option('useAutomationExtension', False)
+        options.add_argument("--log-level=OFF")  # 关闭日志打印
 
-        driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
+        driver = webdriver.Chrome(executable_path=ChromeDriverManager(print_first_line=False).install(),
+                                  options=options)
         with open(f'{os.path.dirname(__file__)}/../stealth.min.js') as f:
             js = f.read()
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
@@ -120,3 +126,11 @@ class WebDriver(object):
         tmpFile.close()
 
         return imgPath
+
+    def __generateUrl(self, hs: str, criteria: str):
+        criteriaList = {
+            "exports": f"https://www.trademap.org/Country_SelProduct.aspx?nvpm=1%7c%7c%7c%7c%7c{hs}%7c%7c%7c2%7c1%7c1%7c2%7c1%7c%7c2%7c1%7c1%7c1",
+            "imports": f"https://www.trademap.org/Country_SelProduct.aspx?nvpm=1%7c%7c%7c%7c%7c{hs}%7c%7c%7c2%7c1%7c1%7c1%7c1%7c%7c2%7c1%7c1%7c1",
+        }
+
+        return criteriaList[criteria]

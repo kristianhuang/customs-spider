@@ -10,7 +10,9 @@ from src.util import excel, flag
 from src.webdriver import WebDriver
 
 if __name__ == '__main__':
-    args = flag.register()
+    f = flag.Flag()
+    f.register().validate()
+
     wd = WebDriver()
-    datas = wd.fetchCustoms(args.hs)
-    excel.save(datas)
+    datas = wd.fetchCustoms(f.args.hs, f.args.criteria)
+    excel.save(f"hs-{f.args.hs}-type-{f.args.criteria}", datas)
