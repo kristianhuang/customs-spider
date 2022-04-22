@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 """
-@File: main.py
+@File: webdriver.py
 @Desc: None
 """
 import os
@@ -10,13 +10,14 @@ import time
 
 import ddddocr
 import requests
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
+from src.spider import Spider
 
-class CustomsSpider(object):
+
+class WebDriver(object):
     def __init__(self):
         self.driver = self.__generateDriver()
 
@@ -25,14 +26,26 @@ class CustomsSpider(object):
         self.driver.get(url)
         time.sleep(1)
         self.__handleLogin()
-
         time.sleep(5)
         self.driver.implicitly_wait(5)
         self.driver.get(url)
+        time.sleep(2)
 
-        self.__generateDomTree(self.driver.page_source)
+        sp = Spider()
         time.sleep(1)
-        self.driver.execute_script("__doPostBack('ctl00$PageContent$MyGridView1','Page$2')")
+        sp.generateDom(self.driver.page_source)
+        time.sleep(1)
+        pageTotal = sp.countPage()
+
+        datas = []
+        datas.extend(sp.crawlData())
+        for p in range(1, pageTotal):
+            self.driver.execute_script(f"__doPostBack('ctl00$PageContent$MyGridView1','Page${p + 1}')")
+            time.sleep(1)
+            sp.generateDom(self.driver.page_source)
+            datas.extend(sp.crawlData())
+
+        return datas
 
     def __handleLogin(self):
         """
@@ -67,16 +80,14 @@ class CustomsSpider(object):
         with open(imgPath, 'rb') as f:
             image = f.read()
         code = orc.classification(image)
+
         os.remove(imgPath)
 
         return code
 
-    def __findDataTable(self):
-        tbody = self.domTree.find("table", id="ctl00_PageContent_MyGridView1").find("tbody")
-        
     def __generateDriver(self):
         options = webdriver.ChromeOptions()
-        # options.add_argument("--headless")
+        options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument('blink-settings=imagesEnabled=false')
         options.add_argument("start-maximized")
@@ -84,7 +95,7 @@ class CustomsSpider(object):
         options.add_experimental_option('useAutomationExtension', False)
 
         driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=options)
-        with open('./stealth.min.js') as f:
+        with open(f'{os.path.dirname(__file__)}/../stealth.min.js') as f:
             js = f.read()
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": js
@@ -99,7 +110,7 @@ class CustomsSpider(object):
         :param imgUrl: img url.
         :return: img path.
         """
-        imgPath = "../cache/tmp.jpg"
+        imgPath = f'{os.path.dirname(__file__)}/../cache/tmp.jpg'
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36",
         }
@@ -107,18 +118,5 @@ class CustomsSpider(object):
         tmpFile = open(imgPath, 'wb')
         tmpFile.write(img)
         tmpFile.close()
+
         return imgPath
-
-    def __generateDomTree(self, content: str):
-        """
-        generate dom tree
-
-        :param content: html source
-        :return: BeautifulSoup
-        """
-        self.domTree = BeautifulSoup(content, "lxml")
-
-
-if __name__ == '__main__':
-    s = CustomsSpider()
-    s.fetchCustoms("0101")
