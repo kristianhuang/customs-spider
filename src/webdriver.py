@@ -10,6 +10,8 @@ import time
 
 import ddddocr
 import requests
+from rich import print
+from rich.progress import track
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
@@ -22,6 +24,7 @@ class WebDriver(object):
         self.driver = self.__generateDriver()
 
     def fetchCustoms(self, hs: str, criteria: str):
+        print("[bold green]破解中,请耐心等待;如果失败,请多尝试几次。[/bold green]:smiley:")
         url = self.__generateUrl(hs, criteria)
         self.driver.get(url)
         time.sleep(1)
@@ -39,7 +42,7 @@ class WebDriver(object):
 
         datas = []
         datas.extend(sp.crawlData())
-        for p in range(1, pageTotal):
+        for p in track(range(1, pageTotal), description="爬取进度"):
             self.driver.execute_script(f"__doPostBack('ctl00$PageContent$MyGridView1','Page${p + 1}')")
             time.sleep(1)
             sp.generateDom(self.driver.page_source)
@@ -92,14 +95,13 @@ class WebDriver(object):
         options.add_argument("--headless")  # 无头模式
         options.add_argument("--disable-gpu")  # 禁止弹窗
         options.add_argument('--incognito')  # 无痕隐身
-        options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        # options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_argument('blink-settings=imagesEnabled=false')
+        options.add_experimental_option("excludeSwitches", ['enable-logging', "enable-automation"])  # 禁止打印日志.规避检测
+        options.add_argument('blink-settings=imagesEnabled=false')  # 禁止图片
         # options.add_argument("start-maximized")
         options.add_experimental_option('useAutomationExtension', False)
-        options.add_argument("--log-level=OFF")  # 关闭日志打印
+        options.add_argument("--log-level=3")  # 关闭日志打印
 
-        driver = webdriver.Chrome(executable_path=ChromeDriverManager(print_first_line=False).install(),
+        driver = webdriver.Chrome(executable_path=ChromeDriverManager(log_level=40).install(),
                                   options=options)
         with open(f'{os.path.dirname(__file__)}/../stealth.min.js') as f:
             js = f.read()

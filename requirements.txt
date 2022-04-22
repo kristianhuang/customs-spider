@@ -6,3 +6,4 @@ webdriver-manager~=3.5.4
 lxml
 xlsxwriter
 pandas
+rich
