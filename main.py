@@ -6,10 +6,11 @@
 @Desc: None
 """
 
-from src.util import excel
+from src.util import excel, flag
 from src.webdriver import WebDriver
 
 if __name__ == '__main__':
+    args = flag.register()
     wd = WebDriver()
-    datas = wd.fetchCustoms("460212")
+    datas = wd.fetchCustoms(args.hs)
     excel.save(datas)
