@@ -65,7 +65,7 @@ class WebDriver(object):
         time.sleep(1)
         self.driver.find_element(By.ID, "Password").send_keys("jngj8sl")
         time.sleep(1)
-        self.driver.find_element_by_class_name("mb-1").click()
+        self.driver.find_element(By.CLASS_NAME, "mb-1").click()
         time.sleep(1)
 
         # If url is login page, verify code
